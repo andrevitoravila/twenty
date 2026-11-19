@@ -66,6 +66,11 @@ type FieldMetadataLinksSettings = FieldMetadataMultiItemSettings & {
   type?: FieldLinksVariant;
 };
 
+// Keyed by option value: fields that must be filled before a record moves into that option
+export type FieldMetadataSelectSettings = {
+  requiredFieldMetadataIdsByOptionValue?: Record<string, string[]>;
+};
+
 type FieldMetadataFilesSettings = {
   maxNumberOfValues: number;
 };
@@ -85,6 +90,7 @@ export type FieldMetadataSettingsMapping = {
   [FieldMetadataType.LINKS]: FieldMetadataLinksSettings | null;
   [FieldMetadataType.ARRAY]: FieldMetadataMultiItemSettings | null;
   [FieldMetadataType.FILES]: FieldMetadataFilesSettings;
+  [FieldMetadataType.SELECT]: FieldMetadataSelectSettings | null;
 };
 
 export type AllFieldMetadataSettings =

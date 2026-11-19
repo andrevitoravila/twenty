@@ -134,6 +134,7 @@ export type {
   FieldNumberVariant,
   FieldCurrencyFormat,
   FieldLinksVariant,
+  FieldMetadataSelectSettings,
   FieldMetadataSettingsMapping,
   AllFieldMetadataSettings,
   FieldMetadataSettings,
@@ -332,6 +333,7 @@ export type {
   RowLevelPermissionPredicateValue,
 } from './RowLevelPermissionPredicateValue';
 export type { RowLevelRecordsPermissions } from './RowLevelRecordsPermissions';
+export type { SelectOptionRequiredFieldsViolation } from './SelectOptionRequiredFieldsViolation';
 export type { SerializedRelation } from './SerializedRelation';
 export { SERIALIZED_RELATION_BRAND } from './SerializedRelation';
 export { ServerFileFolder } from './ServerFileFolder';

@@ -6,6 +6,7 @@ import {
 
 import {
   type FieldMetadataMultiItemSettings,
+  type FieldMetadataSelectSettings,
   type PartialFieldMetadataItemOption,
 } from 'twenty-shared/types';
 import { type ThemeColor } from 'twenty-ui/theme';
@@ -38,6 +39,7 @@ export type FieldMetadataItem = Omit<
     | FieldDateMetadataSettings
     | FieldMetadataMultiItemSettings
     | FieldRelationMetadataSettings
+    | FieldMetadataSelectSettings
     | null;
   isLabelSyncedWithName?: boolean | null;
   morphId?: string | null;
