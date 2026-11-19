@@ -8,6 +8,7 @@ import { useGenerateDepthRecordGqlFieldsFromObject } from '@/object-record/graph
 import { useObjectPermissionsForObject } from '@/object-record/hooks/useObjectPermissionsForObject';
 import { useRecordUpdateFormContextOrThrow } from '@/object-record/record-form/contexts/RecordUpdateFormContext';
 import { computeRecordUpdateFieldsToComplete } from '@/object-record/record-form/utils/computeRecordUpdateFieldsToComplete';
+import { computeSelectOptionRequiredFieldPaths } from '@/object-record/record-form/utils/computeSelectOptionRequiredFieldPaths';
 import { isRecordFieldValueLoaded } from '@/object-record/record-form/utils/isRecordFieldValueLoaded';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
@@ -77,21 +78,35 @@ export const useCompleteRecordUpdate = ({
       updateInput: Partial<ObjectRecord>;
       recordBeforeUpdate?: Partial<ObjectRecord>;
     }): Promise<Partial<ObjectRecord> | null> => {
-      if (!hasValidationRulesEntitlement) {
+      const selectOptionRequiredFieldPaths =
+        computeSelectOptionRequiredFieldPaths({
+          fieldMetadataItems: objectMetadataItem.fields,
+          updateInput,
+        });
+
+      if (
+        !hasValidationRulesEntitlement &&
+        selectOptionRequiredFieldPaths.length === 0
+      ) {
         return updateInput;
       }
 
       try {
-        const { data } = await apolloClient.query({
-          query: FindManyValidationRulesDocument,
-          variables: { objectMetadataId: objectMetadataItem.id },
-        });
+        const activeValidationRules = hasValidationRulesEntitlement
+          ? (
+              (
+                await apolloClient.query({
+                  query: FindManyValidationRulesDocument,
+                  variables: { objectMetadataId: objectMetadataItem.id },
+                })
+              ).data?.validationRules ?? []
+            ).filter((validationRule) => validationRule.isActive)
+          : [];
 
-        const activeValidationRules = (data?.validationRules ?? []).filter(
-          (validationRule) => validationRule.isActive,
-        );
-
-        if (activeValidationRules.length === 0) {
+        if (
+          activeValidationRules.length === 0 &&
+          selectOptionRequiredFieldPaths.length === 0
+        ) {
           return updateInput;
         }
 
@@ -105,8 +120,8 @@ export const useCompleteRecordUpdate = ({
           store.get(recordStoreFamilyState.atomFamily(recordId)) ??
           {};
 
-        const fieldPathsReadByRules = activeValidationRules.flatMap(
-          (validationRule) => {
+        const fieldPathsReadByRules = [
+          ...activeValidationRules.flatMap((validationRule) => {
             const compilationResult = compileValidationRuleExpression({
               expression: validationRule.expression,
               fields,
@@ -115,8 +130,9 @@ export const useCompleteRecordUpdate = ({
             return compilationResult.isValid
               ? Object.keys(compilationResult.bindings)
               : [];
-          },
-        );
+          }),
+          ...selectOptionRequiredFieldPaths,
+        ];
 
         const isEveryFieldValueLoadedIn = (record: Partial<ObjectRecord>) =>
           fieldPathsReadByRules.every((fieldPath) => {

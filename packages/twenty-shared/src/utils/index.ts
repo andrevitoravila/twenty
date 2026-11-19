@@ -97,11 +97,17 @@ export {
   computeRelationGqlFieldJoinColumnName,
   computeMorphRelationGqlFieldJoinColumnName,
 } from './fieldMetadata/compute-relation-gql-field-join-column-name';
+export type { SelectOptionRequirementFieldMetadata } from './fieldMetadata/computeSelectOptionRequiredFieldsViolations';
+export {
+  getSelectOptionRequiredFieldMetadataIds,
+  computeSelectOptionRequiredFieldsViolations,
+} from './fieldMetadata/computeSelectOptionRequiredFieldsViolations';
 export { isCompositePropertySupportedInGroupBy } from './fieldMetadata/isCompositePropertySupportedInGroupBy';
 export { isFieldMetadataArrayKind } from './fieldMetadata/isFieldMetadataArrayKind';
 export { isFieldMetadataDateKind } from './fieldMetadata/isFieldMetadataDateKind';
 export { isFieldMetadataEligibleForFieldsWidget } from './fieldMetadata/isFieldMetadataEligibleForFieldsWidget';
 export { isFieldMetadataEligibleForRecordForm } from './fieldMetadata/isFieldMetadataEligibleForRecordForm';
+export { isFieldMetadataEligibleForSelectOptionRequirement } from './fieldMetadata/isFieldMetadataEligibleForSelectOptionRequirement';
 export { isFieldMetadataEnumKind } from './fieldMetadata/isFieldMetadataEnumKind';
 export { isFieldMetadataNumericKind } from './fieldMetadata/isFieldMetadataNumericKind';
 export { isFieldMetadataOptionActive } from './fieldMetadata/isFieldMetadataOptionActive';
@@ -109,6 +115,7 @@ export { isFieldMetadataSelectKind } from './fieldMetadata/isFieldMetadataSelect
 export { isFieldMetadataSupportedInGroupBy } from './fieldMetadata/isFieldMetadataSupportedInGroupBy';
 export { isFieldMetadataTextKind } from './fieldMetadata/isFieldMetadataTextKind';
 export { isMorphRelationHead } from './fieldMetadata/isMorphRelationHead';
+export { isRecordFieldValueMissingForSelectOptionRequirement } from './fieldMetadata/isRecordFieldValueMissingForSelectOptionRequirement';
 export { pickMorphGroupSurvivorOrThrow } from './fieldMetadata/pick-morph-group-survivor-or-throw';
 export { shouldExcludeFieldFromAgentToolSchema } from './fieldMetadata/shouldExcludeFieldFromAgentToolSchema';
 export { extractFolderPathFilenameAndTypeOrThrow } from './files/extractFolderPathFilenameAndTypeOrThrow.util';

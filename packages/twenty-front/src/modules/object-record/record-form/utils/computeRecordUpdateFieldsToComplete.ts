@@ -1,5 +1,6 @@
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { getFieldMetadataItemGqlFieldName } from '@/object-metadata/utils/getFieldMetadataItemGqlFieldName';
+import { computeSelectOptionRequirementViolations } from '@/object-record/record-form/utils/computeSelectOptionRequirementViolations';
 import { isFieldMetadataItemEligibleForRecordForm } from '@/object-record/record-form/utils/isFieldMetadataItemEligibleForRecordForm';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { type ValidationRule } from '@/validation-rules/types/ValidationRule';
@@ -37,6 +38,7 @@ export const computeRecordUpdateFieldsToComplete = ({
     | 'isUIEditable'
     | 'settings'
     | 'defaultValue'
+    | 'options'
   >[];
   canUpdateField: (fieldMetadataId: string) => boolean;
   now: string;
@@ -61,14 +63,21 @@ export const computeRecordUpdateFieldsToComplete = ({
     ),
   );
 
-  const violations = computeDraftValidationRuleViolations({
-    validationRules,
-    draftRecord,
-    previousRecord,
-    fields,
-    fieldMetadataItems,
-    now,
-  });
+  const violations = [
+    ...computeDraftValidationRuleViolations({
+      validationRules,
+      draftRecord,
+      previousRecord,
+      fields,
+      fieldMetadataItems,
+      now,
+    }),
+    ...computeSelectOptionRequirementViolations({
+      fieldMetadataItems,
+      previousRecord,
+      draftRecord,
+    }),
+  ];
 
   const violatedFieldMetadataIds = new Set(
     violations.map((violation) => violation.fieldMetadataId).filter(isDefined),

@@ -53,6 +53,14 @@ import { useLingui } from '@lingui/react/macro';
 export const settingsDataModelFieldSelectFormSchema = z.object({
   defaultValue: selectFieldDefaultValueSchema(),
   options: selectOptionsSchema,
+  settings: z
+    .object({
+      requiredFieldMetadataIdsByOptionValue: z
+        .record(z.string(), z.array(z.string()))
+        .optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export const settingsDataModelFieldMultiSelectFormSchema = z.object({

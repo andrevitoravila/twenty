@@ -211,3 +211,81 @@ describe('computeRecordUpdateFieldsToComplete', () => {
     ).toEqual([]);
   });
 });
+
+describe('computeRecordUpdateFieldsToComplete with select option requirements', () => {
+  const AMOUNT_FIELD_ID = 'amount-field';
+
+  const fieldMetadataItemsWithRequirement = [
+    {
+      ...FIELD_METADATA_ITEMS[0],
+      options: [
+        {
+          id: 'proposal-option',
+          value: 'PROPOSAL',
+          label: 'Proposal',
+          color: 'blue' as const,
+          position: 0,
+        },
+      ],
+      settings: {
+        requiredFieldMetadataIdsByOptionValue: {
+          PROPOSAL: [AMOUNT_FIELD_ID],
+        },
+      },
+    },
+    {
+      ...FIELD_METADATA_ITEMS[1],
+      id: AMOUNT_FIELD_ID,
+      name: 'amount',
+      type: FieldMetadataType.CURRENCY,
+    },
+  ];
+
+  const computeWithRequirement = ({
+    currentRecord,
+    updateInput,
+  }: {
+    currentRecord: Record<string, unknown>;
+    updateInput: Record<string, unknown>;
+  }) =>
+    computeRecordUpdateFieldsToComplete({
+      validationRules: [],
+      currentRecord,
+      updateInput,
+      fields: FIELDS,
+      fieldMetadataItems: fieldMetadataItemsWithRequirement,
+      canUpdateField: () => true,
+      now: '2026-11-04T10:00:00.000Z',
+    });
+
+  it('asks for the fields required by the option the record moves into', () => {
+    const result = computeWithRequirement({
+      currentRecord: {
+        stage: 'NEW',
+        amount: { amountMicros: null, currencyCode: 'BRL' },
+      },
+      updateInput: { stage: 'PROPOSAL' },
+    });
+
+    expect(result.fieldMetadataIds).toEqual([AMOUNT_FIELD_ID]);
+    expect(result.violations).toEqual([
+      {
+        ruleId: `select-option-requirement:${STAGE_FIELD_ID}:PROPOSAL`,
+        message: 'Required to move to Proposal',
+        fieldMetadataId: AMOUNT_FIELD_ID,
+      },
+    ]);
+  });
+
+  it('asks for nothing once the required field holds a value', () => {
+    expect(
+      computeWithRequirement({
+        currentRecord: {
+          stage: 'NEW',
+          amount: { amountMicros: 5000000, currencyCode: 'BRL' },
+        },
+        updateInput: { stage: 'PROPOSAL' },
+      }).fieldMetadataIds,
+    ).toEqual([]);
+  });
+});

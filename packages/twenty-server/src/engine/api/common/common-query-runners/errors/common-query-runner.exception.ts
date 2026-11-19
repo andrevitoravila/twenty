@@ -21,6 +21,7 @@ export enum CommonQueryRunnerExceptionCode {
   TOO_COMPLEX_QUERY = 'TOO_COMPLEX_QUERY',
   MISSING_TIMEZONE_FOR_DATE_GROUP_BY = 'MISSING_TIMEZONE_FOR_DATE_GROUP_BY',
   INVALID_TIMEZONE = 'INVALID_TIMEZONE',
+  SELECT_OPTION_REQUIRED_FIELDS_MISSING = 'SELECT_OPTION_REQUIRED_FIELDS_MISSING',
 }
 
 export class CommonQueryRunnerException extends CustomException<CommonQueryRunnerExceptionCode> {

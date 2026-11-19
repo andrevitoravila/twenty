@@ -11,6 +11,7 @@ import { FieldMetadataExceptionCode } from 'src/engine/metadata-modules/field-me
 import { type FlatFieldMetadataTypeValidationArgs } from 'src/engine/metadata-modules/flat-field-metadata/types/flat-field-metadata-type-validator.type';
 import { type FlatFieldMetadataValidationError } from 'src/engine/metadata-modules/flat-field-metadata/types/flat-field-metadata-validation-error.type';
 import { validateFieldMetadataInputOptions } from 'src/engine/metadata-modules/flat-field-metadata/validators/utils/validate-field-metadata-input-options.util';
+import { validateSelectOptionRequiredFieldsSettings } from 'src/engine/metadata-modules/flat-field-metadata/validators/utils/validate-select-option-required-fields-settings.util';
 import { validateSelectOptionColors } from 'src/engine/metadata-modules/flat-field-metadata/validators/utils/validate-select-option-colors.util';
 import { type UniversalFlatFieldMetadata } from 'src/engine/workspace-manager/workspace-migration/universal-flat-entity/types/universal-flat-field-metadata.type';
 
@@ -131,9 +132,17 @@ export const validateEnumSelectFlatFieldMetadata = ({
       })
     : [];
 
+  const settingsValidationErrors =
+    universalFlatFieldMetadataToValidate.type === FieldMetadataType.SELECT
+      ? validateSelectOptionRequiredFieldsSettings({
+          settings: universalFlatFieldMetadataToValidate.universalSettings,
+        })
+      : [];
+
   return [
     ...optionsValidationErrors,
     ...optionColorValidationErrors,
     ...defaultValueValidationErrors,
+    ...settingsValidationErrors,
   ];
 };

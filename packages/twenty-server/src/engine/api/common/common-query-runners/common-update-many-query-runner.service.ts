@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 
+import { msg } from '@lingui/core/macro';
+import { QUERY_MAX_RECORDS } from 'twenty-shared/constants';
 import { ObjectRecord } from 'twenty-shared/types';
+import {
+  getSelectOptionRequiredFieldMetadataIds,
+  isDefined,
+} from 'twenty-shared/utils';
 
 import { CommonRecordQueryRunnerService } from 'src/engine/api/common/common-query-runners/common-record-query-runner.service';
 import {
@@ -17,7 +23,14 @@ import {
   CommonQueryNames,
   UpdateManyQueryArgs,
 } from 'src/engine/api/common/types/common-query-args.type';
+import { type ObjectRecordFilter } from 'src/engine/api/graphql/workspace-query-builder/interfaces/object-record.interface';
+import { buildMutationQueryBuilder } from 'src/engine/api/common/common-query-runners/utils/build-mutation-query-builder.util';
+import {
+  computeSelectOptionRequiredFieldsUpdateViolations,
+  getSelectFieldNamesGatedByUpdateData,
+} from 'src/engine/api/common/common-query-runners/utils/compute-select-option-required-fields-update-violations.util';
 import { assertIsValidUuid } from 'src/engine/api/graphql/workspace-query-runner/utils/assert-is-valid-uuid.util';
+import { getFlatFieldsFromFlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/utils/get-flat-fields-for-flat-object-metadata.util';
 import { assertMutationNotOnRemoteObject } from 'src/engine/metadata-modules/object-metadata/utils/assert-mutation-not-on-remote-object.util';
 
 @Injectable()
@@ -31,6 +44,12 @@ export class CommonUpdateManyQueryRunnerService extends CommonRecordQueryRunnerS
     args: CommonExtendedInput<UpdateManyQueryArgs>,
     queryRunnerContext: CommonExtendedQueryRunnerContext,
   ): Promise<CommonQueryRunResult<ObjectRecord[]>> {
+    await this.assertSelectOptionRequiredFieldsAreFilled({
+      queryRunnerContext,
+      filter: args.filter,
+      data: args.data,
+    });
+
     return this.runFilteredMutation({
       queryRunnerContext,
       filter: args.filter,
@@ -38,6 +57,101 @@ export class CommonUpdateManyQueryRunnerService extends CommonRecordQueryRunnerS
       kind: 'update',
       data: args.data,
     });
+  }
+
+  private async assertSelectOptionRequiredFieldsAreFilled({
+    queryRunnerContext,
+    filter,
+    data,
+  }: {
+    queryRunnerContext: CommonExtendedQueryRunnerContext;
+    filter: Partial<ObjectRecordFilter>;
+    data: Partial<ObjectRecord>;
+  }): Promise<void> {
+    const { flatObjectMetadata, flatFieldMetadataMaps, commonQueryParser } =
+      queryRunnerContext;
+
+    const fieldMetadataItems = getFlatFieldsFromFlatObjectMetadata(
+      flatObjectMetadata,
+      flatFieldMetadataMaps,
+    );
+
+    const gatedSelectFieldNames = getSelectFieldNamesGatedByUpdateData({
+      fieldMetadataItems,
+      data,
+    });
+
+    if (gatedSelectFieldNames.length === 0) {
+      return;
+    }
+
+    const fieldNameById = new Map(
+      fieldMetadataItems.map(({ id, name }) => [id, name]),
+    );
+
+    const requiredFieldNames = fieldMetadataItems
+      .filter(({ name }) => gatedSelectFieldNames.includes(name))
+      .flatMap(({ name, settings }) =>
+        getSelectOptionRequiredFieldMetadataIds({
+          settings,
+          optionValue: data[name] as string,
+        }),
+      )
+      .map((fieldMetadataId) => fieldNameById.get(fieldMetadataId))
+      .filter(
+        (fieldName): fieldName is string => typeof fieldName === 'string',
+      );
+
+    const repository = this.getReadRepository(queryRunnerContext);
+
+    const { selectQueryBuilder } = await buildMutationQueryBuilder({
+      repository,
+      alias: flatObjectMetadata.nameSingular,
+      filter,
+      commonQueryParser,
+      kind: 'update',
+    });
+
+    const recordIds = (
+      await selectQueryBuilder
+        .select(['id'])
+        .take(QUERY_MAX_RECORDS + 1)
+        .getMany<ObjectRecord>({ noFormatting: true })
+    ).map(({ id }) => id);
+
+    if (recordIds.length === 0) {
+      return;
+    }
+
+    const recordsBeforeUpdate = repository.formatResult<ObjectRecord[]>(
+      await repository.findRecordSnapshotsBypassingPermissions({
+        ids: recordIds,
+        fieldNames: [
+          ...new Set([...gatedSelectFieldNames, ...requiredFieldNames]),
+        ],
+      }),
+    );
+
+    const [firstViolation] = computeSelectOptionRequiredFieldsUpdateViolations({
+      fieldMetadataItems,
+      recordsBeforeUpdate,
+      data,
+    });
+
+    if (!isDefined(firstViolation)) {
+      return;
+    }
+
+    const missingFieldLabels = firstViolation.missingFieldLabels.join(', ');
+    const optionValue = firstViolation.optionValue;
+
+    throw new CommonQueryRunnerException(
+      `Missing required fields to move record ${firstViolation.recordId} to ${firstViolation.selectFieldName} "${optionValue}": ${firstViolation.missingFieldNames.join(', ')}`,
+      CommonQueryRunnerExceptionCode.SELECT_OPTION_REQUIRED_FIELDS_MISSING,
+      {
+        userFriendlyMessage: msg`Fill in ${missingFieldLabels} before moving to "${optionValue}".`,
+      },
+    );
   }
 
   async computeArgs(

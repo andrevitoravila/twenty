@@ -17,6 +17,7 @@ import { FIELD_NAME_MAXIMUM_LENGTH } from '@/settings/data-model/constants/Field
 import { SettingsDataModelFieldDescriptionForm } from '@/settings/data-model/fields/forms/components/SettingsDataModelFieldDescriptionForm';
 import { SettingsDataModelFieldIconLabelForm } from '@/settings/data-model/fields/forms/components/SettingsDataModelFieldIconLabelForm';
 import { SettingsDataModelFieldSettingsFormCard } from '@/settings/data-model/fields/forms/components/SettingsDataModelFieldSettingsFormCard';
+import { SettingsDataModelFieldSelectRequiredFieldsForm } from '@/settings/data-model/fields/forms/select/components/SettingsDataModelFieldSelectRequiredFieldsForm';
 import { settingsFieldFormSchema } from '@/settings/data-model/fields/forms/validation-schemas/settingsFieldFormSchema';
 import { type SettingsDataModelFieldEditFormValues } from '@/settings/data-model/types/SettingsDataModelFieldEditFormValues';
 import { type SettingsFieldType } from '@/settings/data-model/types/SettingsFieldType';
@@ -429,6 +430,19 @@ export const SettingsObjectFieldEdit = () => {
                   fieldType={fieldMetadataItem.type}
                   existingFieldMetadataId={fieldMetadataItem.id}
                   objectNameSingular={objectMetadataItem.nameSingular}
+                  disabled={isFieldPropertiesReadonly}
+                />
+              </Section.Root>
+            )}
+            {fieldMetadataItem.type === FieldMetadataType.SELECT && (
+              <Section.Root>
+                <Section.Header
+                  title={t`Required fields`}
+                  description={t`Fields to fill in before a record moves to each option`}
+                />
+                <SettingsDataModelFieldSelectRequiredFieldsForm
+                  selectFieldMetadataItem={fieldMetadataItem}
+                  objectFieldMetadataItems={objectMetadataItem.fields}
                   disabled={isFieldPropertiesReadonly}
                 />
               </Section.Root>
